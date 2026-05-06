@@ -1,11 +1,14 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const { Log, requestLogger } = require('./logging_middleware/logger');
+const { buildSchedule, fetchDepotsAndTasks, writeScheduleFile } = require('./vehicle_maintenance_scheduler/scheduler');
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 
-class depotManager {
+class DepotManager {
     constructor() {
         this.depots = [];
         this.currentId = 1;
@@ -38,9 +41,9 @@ class depotManager {
 
 }
 
-const depotManager = new depotManager();
+const depotManager = new DepotManager();
 
-class vehicleManager {
+class VehicleManager {
     constructor() {
         this.vehicles = [];
     }
@@ -91,7 +94,7 @@ class vehicleManager {
     }
 }
 
-const vehicleManager = new vehicleManager();
+const vehicleManager = new VehicleManager();
 
 class NotificationManager {
     constructor() {
@@ -167,10 +170,12 @@ app.post('/tasks', (req, res) => {
     const { mechanicHours } = req.body;
 
     if (mechanicHours === undefined) {
+        void Log('backend', 'warn', 'route', 'Missing mechanicHours in POST /tasks');
         return res.status(400).json({ error: 'Mechanic hours is required' });
     }
 
     const depot = depotManager.createDepot(mechanicHours);
+    void Log('backend', 'info', 'route', `Created depot ${depot.id} with ${mechanicHours} hours`);
     res.status(201).json(depot);
 });
 
@@ -184,7 +189,7 @@ app.get('/depots', (req, res) => {
 });
 
 app.get('/vehicles', (req, res) => {
-    res.json(depotManager.getAllVehicles());
+    res.json(vehicleManager.getAllVehicles());
 });
 
 app.get('/notifications', (req, res) => {
@@ -192,37 +197,37 @@ app.get('/notifications', (req, res) => {
 });
 /*
 ----------------------------------------
-UPDATE DEPOT (PUT /depots/:id)
+UPDATE VEHICLE (PUT /vehicles/:id)
 ----------------------------------------
 */
-app.put('/tasks/:id', (req, res) => {
+app.put('/vehicles/:id', (req, res) => {
     const id = parseInt(req.params.id);
-    const { mechanicHours } = req.body;
+    const { duration, impact } = req.body;
 
-    const task = depotManager.updateTask(id, mechanicHours);
+    const vehicle = vehicleManager.updateVehicle(id, duration, impact);
 
-    if (!task) {
-        return res.status(404).json({ error: 'Task not found' });
+    if (!vehicle) {
+        return res.status(404).json({ error: 'Vehicle not found' });
     }
 
-    res.json(task);
+    res.json(vehicle);
 });
 
 /*
 ----------------------------------------
-DELETE TASK (DELETE /tasks/:id)
+DELETE VEHICLE (DELETE /vehicles/:id)
 ----------------------------------------
 */
-app.delete('/tasks/:id', (req, res) => {
+app.delete('/vehicles/:id', (req, res) => {
     const id = parseInt(req.params.id);
 
-    const success = depotManager.deleteTask(id);
+    const success = vehicleManager.deleteVehicle(id);
 
     if (!success) {
-        return res.status(404).json({ error: 'Task not found' });
+        return res.status(404).json({ error: 'Vehicle not found' });
     }
 
-    res.json({ message: 'Task deleted successfully' });
+    res.json({ message: 'Vehicle deleted successfully' });
 });
 
 /*
@@ -257,9 +262,35 @@ app.get('/tasks/search/:keyword', (req, res) => {
 
 /*
 ----------------------------------------
+SCHEDULE VEHICLE MAINTENANCE (GET /schedule)
+----------------------------------------
+*/
+app.get('/schedule', async (req, res, next) => {
+    try {
+        const { depots, tasks } = await fetchDepotsAndTasks();
+        const schedule = buildSchedule(depots, tasks);
+
+        await writeScheduleFile(schedule);
+        void Log('backend', 'info', 'service', 'Generated maintenance schedule');
+
+        res.json(schedule);
+    } catch (error) {
+        void Log('backend', 'error', 'service', `Schedule generation failed: ${error.message}`);
+        next(error);
+    }
+});
+
+app.use((err, req, res, next) => {
+    const message = `Unhandled error on ${req.method} ${req.originalUrl}: ${err.message}`;
+    void Log('backend', 'error', 'middleware', message);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
+/*
+----------------------------------------
 START SERVER
 ----------------------------------------
 */
 app.listen(5000, () => {
-    console.log('Server running on http://localhost:5000');
+    void Log('backend', 'info', 'service', 'Server running on http://localhost:5000');
 });
