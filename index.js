@@ -179,13 +179,20 @@ app.post('/tasks', (req, res) => {
 GET ALL TASKS (GET /tasks)
 ----------------------------------------
 */
-app.get('/tasks', (req, res) => {
-    res.json(depotManager.getAllTasks());
+app.get('/depots', (req, res) => {
+    res.json(depotManager.getAllDepots());
 });
 
+app.get('/vehicles', (req, res) => {
+    res.json(depotManager.getAllVehicles());
+});
+
+app.get('/notifications', (req, res) => {
+    res.json(notificationManager.getAllNotifications());
+});
 /*
 ----------------------------------------
-UPDATE TASK (PUT /tasks/:id)
+UPDATE DEPOT (PUT /depots/:id)
 ----------------------------------------
 */
 app.put('/tasks/:id', (req, res) => {
