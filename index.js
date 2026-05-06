@@ -7,7 +7,6 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 
-
 class DepotManager {
     constructor() {
         this.depots = [];
@@ -49,12 +48,7 @@ class VehicleManager {
     }
 
     createVehicle(id, Duration, Impact) {
-        const newTask = {
-            TaskID: id,
-            Duration,
-            Impact,
-            score: Duration/Impact,/*Similar to knapsack problem, I am thinking the one which has highest score should be assigned first */
-        };
+        const newTask = { TaskID: id, Duration, Impact, score: Duration / Impact };
         this.vehicles.push(newTask);
         return newTask;
     }
@@ -151,21 +145,9 @@ class NotificationManager {
 }
 
 const notificationManager = new NotificationManager();
-
-/*
-----------------------------------------
-ROOT ROUTE
-----------------------------------------
-*/
 app.get('/', (req, res) => {
     res.send('API is running');
 });
-
-/*
-----------------------------------------
-CREATE TASK (POST /tasks)
-----------------------------------------
-*/
 app.post('/tasks', (req, res) => {
     const { mechanicHours } = req.body;
 
@@ -178,28 +160,15 @@ app.post('/tasks', (req, res) => {
     void Log('backend', 'info', 'route', `Created depot ${depot.id} with ${mechanicHours} hours`);
     res.status(201).json(depot);
 });
-
-/*
-----------------------------------------
-GET ALL TASKS (GET /tasks)
-----------------------------------------
-*/
 app.get('/depots', (req, res) => {
     res.json(depotManager.getAllDepots());
 });
-
 app.get('/vehicles', (req, res) => {
     res.json(vehicleManager.getAllVehicles());
 });
-
 app.get('/notifications', (req, res) => {
     res.json(notificationManager.getAllNotifications());
 });
-/*
-----------------------------------------
-UPDATE VEHICLE (PUT /vehicles/:id)
-----------------------------------------
-*/
 app.put('/vehicles/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const { duration, impact } = req.body;
@@ -212,12 +181,6 @@ app.put('/vehicles/:id', (req, res) => {
 
     res.json(vehicle);
 });
-
-/*
-----------------------------------------
-DELETE VEHICLE (DELETE /vehicles/:id)
-----------------------------------------
-*/
 app.delete('/vehicles/:id', (req, res) => {
     const id = parseInt(req.params.id);
 
@@ -229,12 +192,6 @@ app.delete('/vehicles/:id', (req, res) => {
 
     res.json({ message: 'Vehicle deleted successfully' });
 });
-
-/*
-----------------------------------------
-FILTER TASKS (GET /tasks?completed=true)
-----------------------------------------
-*/
 app.get('/tasks/filter', (req, res) => {
     const { completed } = req.query;
 
@@ -247,24 +204,12 @@ app.get('/tasks/filter', (req, res) => {
 
     res.json(result);
 });
-
-/*
-----------------------------------------
-SEARCH TASKS (GET /tasks/search/:keyword)
-----------------------------------------
-*/
 app.get('/tasks/search/:keyword', (req, res) => {
     const keyword = req.params.keyword;
     const result = depotManager.searchTasks(keyword);
 
     res.json(result);
 });
-
-/*
-----------------------------------------
-SCHEDULE VEHICLE MAINTENANCE (GET /schedule)
-----------------------------------------
-*/
 app.get('/schedule', async (req, res, next) => {
     try {
         const { depots, tasks } = await fetchDepotsAndTasks();
@@ -285,12 +230,6 @@ app.use((err, req, res, next) => {
     void Log('backend', 'error', 'middleware', message);
     res.status(500).json({ error: 'Internal server error' });
 });
-
-/*
-----------------------------------------
-START SERVER
-----------------------------------------
-*/
 app.listen(5000, () => {
     void Log('backend', 'info', 'service', 'Server running on http://localhost:5000');
 });
