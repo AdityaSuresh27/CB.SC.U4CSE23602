@@ -4,57 +4,38 @@ const cors = require('cors');
 app.use(cors());
 app.use(express.json());
 
-/*
-----------------------------------------
-TASK MANAGER CLASS (OOP)
-----------------------------------------
-*/
+
 class depotManager {
     constructor() {
         this.depots = [];
         this.currentId = 1;
+        this.totalAvailableHours = 0; 
     }
 
     createDepot(mechanicHours) {
         const newTask = {
             id: this.currentId++,
-            mechanicHours,
+            MechanicHours: mechanicHours,
         };
         this.depots.push(newTask);
+        this.totalAvailableHours += mechanicHours;
         return newTask;
     }
 
-    getAllTasks() {
+    getAllDepots() {
         return this.depots;
     }
 
-    getTaskById(id) {
+    getDepotById(id) {
         return this.depots.find(t => t.id === id);
     }
 
-    updateTask(id, newMechanicHours) {
-        const task = this.getTaskById(id);
-        if (!task) return null;
-
-        if (newMechanicHours) {
-            task.mechanicHours = newMechanicHours;
-        }
-
-        return task;
-    }
-
-    deleteTask(id) {
+    deleteDepot(id) {
         const initialLength = this.depots.length;
         this.depots = this.depots.filter(t => t.id !== id);
         return this.depots.length !== initialLength;
     }
 
-
-    searchTasks(keyword) {
-        return this.depots.filter(t =>
-            t.title.toLowerCase().includes(keyword.toLowerCase())
-        );
-    }
 }
 
 const depotManager = new depotManager();
@@ -62,58 +43,112 @@ const depotManager = new depotManager();
 class vehicleManager {
     constructor() {
         this.vehicles = [];
-        this.currentId = 1;
     }
 
-    createVehicle(Duration, Impact) {
+    createVehicle(id, Duration, Impact) {
         const newTask = {
-            id: this.currentId++,
+            TaskID: id,
             Duration,
             Impact,
-            ratio: Duration/Impact,
+            score: Duration/Impact,/*Similar to knapsack problem, I am thinking the one which has highest score should be assigned first */
         };
         this.vehicles.push(newTask);
         return newTask;
     }
 
-    getAllTasks() {
+    getAllVehicles() {
         return this.vehicles;
     }
 
-    getTaskById(id) {
-        return this.vehicles.find(t => t.id === id);
+    getVehicleById(id) {
+        return this.vehicles.find(t => t.TaskID === id);
     }
 
-    updateTask(id, newDuration, newImpact) {
-        const task = this.getTaskById(id);
-        if (!task) return null;
+    updateVehicle(id, newDuration, newImpact) {
+        const vehicle = this.getVehicleById(id);
+        if (!vehicle) return null;
 
         if (newDuration !== undefined) {
-            task.Duration = newDuration;
+            vehicle.Duration = newDuration;
         }
         if (newImpact !== undefined) {
-            task.Impact = newImpact;
+            vehicle.Impact = newImpact;
         }
 
-        return task;
+        return vehicle;
     }
 
-    deleteTask(id) {
+    deleteVehicle(id) {
         const initialLength = this.vehicles.length;
-        this.vehicles = this.vehicles.filter(t => t.id !== id);
+        this.vehicles = this.vehicles.filter(t => t.TaskID !== id);
         return this.vehicles.length !== initialLength;
     }
 
-    filterTasksByCompletion(status) {
-        return this.vehicles.filter(t => t.completed === status);
-    }
-
-    searchTasks(keyword) {
+    searchVehicles(keyword) {
         return this.vehicles.filter(t =>
             t.title.toLowerCase().includes(keyword.toLowerCase())
         );
     }
 }
+
+const vehicleManager = new vehicleManager();
+
+class NotificationManager {
+    constructor() {
+        this.notifications = [];
+    }
+
+    createNotification(id, Type, Message, Timestamp) {
+        const newnotification = {
+            TaskID: id,
+            type: Type,
+            message: Message,
+            timestamp: Timestamp,
+        };
+        this.notifications.push(newnotification);
+        return newnotification;
+    }
+
+    getAllNotifications() {
+        return this.notifications;
+    }
+
+    getNotificationById(id) {
+        return this.notifications.find(t => t.TaskID === id);
+    }
+
+    updateNotification(id, newType, newMessage, newTimestamp) {
+        const notification = this.getNotificationById(id);
+        if (!notification) return null;
+
+        if (newType !== undefined) {
+            notification.type = newType;
+        }
+        if (newMessage !== undefined) {
+            notification.message = newMessage;
+        }
+        if (newTimestamp !== undefined) {
+            notification.timestamp = newTimestamp;
+        }
+
+        return notification;
+    }
+
+    deleteNotification(id) {
+        const initialLength = this.notifications.length;
+        this.notifications = this.notifications.filter(t => t.TaskID !== id);
+        return this.notifications.length !== initialLength;
+    }
+
+    searchNotifications(keyword) {
+        return this.notifications.filter(t =>
+            t.message.toLowerCase().includes(keyword.toLowerCase())
+        );
+    }
+}
+
+const notificationManager = new NotificationManager();
+
 /*
 ----------------------------------------
 ROOT ROUTE
